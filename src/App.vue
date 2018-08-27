@@ -1,33 +1,21 @@
 <template>
   <div id="app">
 
-    <div class="site-wrap">
+    <div v-for="(windowData, key) in windowsData" :key="key" class="site-wrap">
       <input
         class="site-entry"
         type="text"
         placeholder="Enter website here and press 'enter'"
-        @keyup.enter="updateSites"
-        v-model="userInput.left">
+        @keyup.prevent.enter="updateSites(windowData, key)"
+        v-model="windowData.userInput"
+      >
 
       <iframe 
+        :id="key"
+        :name="key"
         class="site"
-        v-if="sites.left"
-        :src="sites.left">
-      </iframe>
-    </div>
-
-    <div class="site-wrap">
-      <input
-        class="site-entry"
-        type="text"
-        placeholder="Enter website here and press 'enter'"
-        @keyup.enter="updateSites"
-        v-model="userInput.right">
-
-      <iframe
-        class="site"
-        v-if="sites.right"
-        :src="sites.right">
+        v-if="windowData.site"
+        :src="windowData.site">
       </iframe>
     </div>
 
@@ -39,33 +27,32 @@ export default {
   name: 'app',
   data () {
     return {
-      msg: 'Welcome to Your Vue.js App',
-      userInput: {
-        left: '',
-        right: ''
+      windowsData: {
+        a: {
+          userInput: '',
+          site: ''
+        },
+        b: {
+          userInput: '',
+          site: ''
+        },
+        c: {
+          userInput: '',
+          site: ''
+        },
+        d: {
+          userInput: '',
+          site: ''
+        },
       },
-      sites: {
-        left: '',
-        right: ''
-      }
     }
   },
   mounted () {
-    
-    chrome.storage.sync.get('sites', (data) => {
+    chrome.storage.sync.get('windowsData', (data) => {
+      if (!data.windowsData || Object.keys(data.windowsData).length === 0) return;
 
-      if(data.sites) {
-
-        this.sites.left = data.sites.left;
-        this.userInput.left = data.sites.left;
-  
-        this.sites.right = data.sites.right;
-        this.userInput.right = data.sites.right;
-
-        this.addListeners();
-
-      }
-
+      this.windowsData = data.windowsData;
+      this.addListeners();
     })
 
   },
@@ -99,12 +86,12 @@ export default {
      * Adds the header listeners when the sites update
      */
     addListeners () {
-
-      for (let site in this.sites) {
-        if(this.sites[site]) {
+      for (let key in this.windowsData) {
+        const windowData = this.windowsData[key]
+        if(windowData.site) {
           chrome.webRequest.onHeadersReceived.addListener(
             this.onHeadersReceived,
-            { urls: [this.sites[site]] },
+            { urls: [windowData.site] },
             [ "blocking", "responseHeaders" ]
           );
         }
@@ -114,32 +101,30 @@ export default {
     /**
      * Update the sites when changed by the user
      */
-    updateSites (event) {
-
-      event.preventDefault();
-
-      for (let site in this.sites) {
-        if(this.sites[site]) {
+    updateSites (windowData, key) {
+      const reg = new RegExp('^(http|https)://','gi');
+      if (!reg.test(windowData.userInput)) {
+        windowData.userInput = `https://${windowData.userInput}`
+      }
+      if (windowData.site && windowData.site === windowData.userInput) {
+        document.getElementById(key).src = windowData.site
+      }
+      for (let windowData in this.windowsData) {
+        if(windowData.site) {
           chrome.webRequest.onHeadersReceived.removeListener(
             this.onHeadersReceived,
-            { urls: [this.sites[site]] },
+            { urls: [windowData.site] },
             [ "blocking", "responseHeaders" ]
           );
         }
       }
 
-      chrome.storage.sync.set({
-        sites: {
-          left: this.userInput.left,
-          right: this.userInput.right
-        },
-      }, (data) => {
-  
-        this.sites.left = this.userInput.left;
-        this.sites.right = this.userInput.right;
+      windowData.site = windowData.userInput;
+      this.addListeners();
 
-        this.addListeners();
-  
+      chrome.storage.sync.set({
+        windowsData: this.windowsData,
+      }, () => {
       });
 
     }
@@ -149,7 +134,7 @@ export default {
 
 <style>
 #app {
-  display: flex;
+  box-sizing: border-box;
   height: 100vh;
   width: 100vw;
 }
@@ -157,16 +142,36 @@ export default {
 .site-wrap {
   display: flex;
   flex-direction: column;
-  flex-basis: 50%;
+  float: left;
 }
-
+.site-wrap:nth-child(1) {
+  width: 100vw;
+  height: 50vh;
+}
+.site-wrap:nth-child(2) {
+  width: 50vw;
+  height: 50vh;
+}
+.site-wrap:nth-child(3) {
+  width: 25vw;
+  height: 50vh;
+}
+.site-wrap:nth-child(4) {
+  width: 25vw;
+  height: 50vh;
+}
 .site-entry {
+  height: min-content;
+  box-sizing: border-box;
   font-size: 16px;
   padding: 8px;
+  width: 100%;
 }
 
 .site {
+  flex: 1;
+  width: 100%;
+  height: 100%;
   border: 0;
-  flex-grow: 1;
 }
 </style>
