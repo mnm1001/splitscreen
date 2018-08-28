@@ -4,12 +4,16 @@
     "description": "Displays two webpages next to each other in a new tab",
     "version": "0.0.1",
     "author": "Siddharth Vadgama <me@siddv.net>",
-    "homepage_url": "https://github.com/siddv/splitscreen",
+    "homepage_url": "https://github.com/mnm1001/splitscreen",
     "icons": {
         "16": "icons/splitscreen-16.png",
         "32": "icons/splitscreen-32.png",
         "48": "icons/splitscreen-48.png",
         "128": "icons/splitscreen-128.png"
+    },
+    "browser_action":
+    {
+        "default_icon": "icons/splitscreen-16.png"
     },
     "permissions": [
         "management",
@@ -18,7 +22,8 @@
         "webRequestBlocking",
         "<all_urls>"
     ],
-    "chrome_url_overrides": {
-        "newtab": "index.html"
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": true
     }
 }
